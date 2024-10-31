@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import UploadedFile
 from .serializer import UploadedFileSerializer
+import boto3
+from django.conf import settings
 
 @api_view(['GET'])
 def get_files(request):
@@ -20,7 +22,24 @@ parser_classes = (MultiPartParser, FormParser);
 def upload_file(request):
         file_serializer = UploadedFileSerializer(data=request.data)
         if file_serializer.is_valid():
-            file_serializer.save()
-            return Response(file_serializer.data, status=201)
+            file = request.FILES['file']
+            s3 = boto3.client('s3', 
+                          aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                          aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                          region_name=settings.AWS_S3_REGION_NAME)
+            
+            bucket_name=settings.AWS_STORAGE_BUCKET_NAME
+            file_key=f"uploads/{file.name}"
+        
+            s3.upload_fileobj(file, bucket_name, file_key,ExtraArgs={'ContentType': 'application/pdf'})
+
+            presigned_url = s3.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': bucket_name, 'Key': file_key},
+                ExpiresIn=3600 
+            )
+
+            return Response({"file_url": presigned_url}, status=201)
+            
         else:
             return Response(file_serializer.errors, status=400)

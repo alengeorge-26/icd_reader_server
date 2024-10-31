@@ -29,7 +29,19 @@ INSTALLED_APPS = [
     'api',
     'file_api',
     'corsheaders',
+    'storages',
 ]
+
+AWS_ACCESS_KEY_ID = 'AKIAZGCTKU33LZJQKPNM'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'icd-temp-bucket-20241031'
+AWS_S3_SIGNATURE_NAME = 's3v4'
+AWS_S3_REGION_NAME = 'us-east-1'
+AWS_S3_FILE_OVERWRITE = False
+AWS_S3_VERITY= True
+AWS_DEFAULT_ACL = None
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
