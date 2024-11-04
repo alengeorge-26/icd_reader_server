@@ -48,11 +48,16 @@ def upload_file(request):
         
 @api_view(['POST'])
 def upload_folder(request):
-    pdf_url=[]
+    pdf=[]
+
+    user = request.data.get('user');
+
+    print(user+'->'+request.data.get('folder'))
 
     if request.FILES.get('folder'):
         folder_zip = request.FILES['folder']
-    
+        folder_name = folder_zip.name;
+
         s3 = boto3.client('s3', 
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -63,7 +68,7 @@ def upload_folder(request):
         with zipfile.ZipFile(folder_zip, 'r') as zip_ref:
             for file_info in zip_ref.infolist():
                  with zip_ref.open(file_info) as file:
-                       s3_key = f"upload_folder/{file_info.filename}"
+                       s3_key = f"{user}/{folder_name}/{file_info.filename}"
                        s3.upload_fileobj(file, bucket_name, s3_key,ExtraArgs={'ContentType': 'application/pdf'})
 
                        presigned_url = s3.generate_presigned_url(
@@ -71,9 +76,13 @@ def upload_folder(request):
                             Params={'Bucket': bucket_name, 'Key': s3_key},
                             ExpiresIn=3600 
                        )
-                       pdf_url.append(presigned_url)
+                       pdf.append({
+                            "name": file_info.filename,
+                            "url": presigned_url,
+                            "status": "Uploaded"
+                       })
                       
-        return Response({"message": "Folder uploaded successfully", "pdf_url": pdf_url}, status=201)
+        return Response({"message": "Folder uploaded successfully","success": True, "pdf": pdf}, status=201)
     
     else:
-        return Response({"message": "No file uploaded"}, status=400)
+        return Response({"message": "No file uploaded","success": False}, status=400)
