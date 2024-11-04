@@ -12,10 +12,15 @@ def login_request(request):
     if username == '' or password == '':
         return Response({'error': 'Username or password cannot be empty !!','success': False}, status=status.HTTP_400_BAD_REQUEST)
 
-    if username == 'username' and password == 'password':
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid username !!','success': False}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if user.password == password:
         return Response({'message': 'Login successful !!','success': True}, status=status.HTTP_200_OK)
     
-    return Response({'error': 'Invalid username or password !!','success': False}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({'error': 'Invalid password !!','success': False}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['GET'])
 def get_users(request):
