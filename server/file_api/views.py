@@ -52,7 +52,7 @@ def upload_folder(request):
 
     user = request.data.get('user');
 
-    print(user+'->'+request.data.get('folder'))
+    print(user)
 
     if request.FILES.get('folder'):
         folder_zip = request.FILES['folder']
