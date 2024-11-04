@@ -24,4 +24,6 @@ def login_request(request):
 
 @api_view(['GET'])
 def get_users(request):
-    return Response(UserSerializer({'username': 'username', 'password': 'password'}).data)
+    users = User.objects.all();
+
+    return Response(users.values())
