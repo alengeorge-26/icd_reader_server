@@ -1,0 +1,7 @@
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid username !!','success': False}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if user.password == password:
+        return Response({'message': 'Login successful !!','success': True}, status=status.HTTP_200_OK)
