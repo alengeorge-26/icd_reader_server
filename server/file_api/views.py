@@ -1,6 +1,5 @@
-import os
 import zipfile
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes,authentication_classes 
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
@@ -9,8 +8,12 @@ from .models import UploadedFile
 from .serializer import UploadedFileSerializer
 import boto3
 from django.conf import settings
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 @api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def get_files(request):
     data = {
         "message": "This is a test API in file_api",
@@ -21,6 +24,8 @@ def get_files(request):
 
 parser_classes = (MultiPartParser, FormParser);
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def upload_file(request):
         file_serializer = UploadedFileSerializer(data=request.data)
         if file_serializer.is_valid():
@@ -47,6 +52,8 @@ def upload_file(request):
             return Response(file_serializer.errors, status=400)
         
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def upload_folder(request):
     pdf=[]
 

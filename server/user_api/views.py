@@ -1,28 +1,15 @@
 from rest_framework.decorators import api_view, permission_classes,authentication_classes 
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework import status
-from .utils.verifyToken import verify_token
-from .serializer import UserSerializer , RegisterSerializer
+from .serializer import RegisterSerializer
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-
-        token['username'] = user.username
-
-        return token
-
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
 
 @api_view(['POST'])
 def login_request(request):
@@ -36,7 +23,6 @@ def login_request(request):
 
     if user is not None:
         refresh = RefreshToken.for_user(user)
-        refresh['username'] = user.username
         return Response({'access': str(refresh.access_token),'refresh': str(refresh)}, status=status.HTTP_200_OK)
 
     return Response({'error': 'Invalid username or password !!','success': False}, status=status.HTTP_401_UNAUTHORIZED)
@@ -61,13 +47,16 @@ def create_user(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_users(request):
-    users = User.objects.all()
+    try:
+        users = User.objects.all()
 
-    data = []
+        data = []
 
-    for user in users:
-        data.append({
-            'username': user.username,
-        })
+        for user in users:
+            data.append({
+                'username': user.username,
+            })
 
-    return Response({'data': data,'success': True}, status=status.HTTP_200_OK)
+        return Response({'data': data,'success': True}, status=status.HTTP_200_OK)
+    except AuthenticationFailed as e:
+        return Response({'message': 'Invalid Token','success': False}, status=status.HTTP_401_UNAUTHORIZED)
