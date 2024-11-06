@@ -29,7 +29,7 @@ REST_FRAMEWORK = {
 SECRET_KEY ='Io8RmnU51J-dZDDtMxUM9CCf-v2VDfWP6_-QwLoOvvyi38MgRTcrqJxKOrrhwnfnE2I'
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,

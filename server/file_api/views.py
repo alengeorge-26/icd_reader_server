@@ -2,10 +2,8 @@ import zipfile
 from rest_framework.decorators import api_view, permission_classes,authentication_classes 
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import UploadedFile
-from .serializer import UploadedFileSerializer
 import boto3
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
@@ -27,9 +25,9 @@ parser_classes = (MultiPartParser, FormParser);
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def upload_file(request):
-        file_serializer = UploadedFileSerializer(data=request.data)
-        if file_serializer.is_valid():
+        if request.FILES.get('file'):
             file = request.FILES['file']
+
             s3 = boto3.client('s3', 
                           aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                           aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -46,10 +44,15 @@ def upload_file(request):
                 ExpiresIn=3600 
             )
 
+            file_obj = UploadedFile.objects.create(
+                user_id=request.data.get('user_id'),
+                input_path=presigned_url
+            )
+
             return Response({"file_url": presigned_url}, status=201)
             
         else:
-            return Response(file_serializer.errors, status=400)
+            return Response({"message": "No file uploaded","success": False}, status=400)
         
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
@@ -57,9 +60,7 @@ def upload_file(request):
 def upload_folder(request):
     pdf=[]
 
-    user = request.data.get('user');
-
-    print(user)
+    user_id = request.data.get('user_id');
 
     if request.FILES.get('folder'):
         folder_zip = request.FILES['folder']
@@ -75,15 +76,24 @@ def upload_folder(request):
         with zipfile.ZipFile(folder_zip, 'r') as zip_ref:
             for file_info in zip_ref.infolist():
                  with zip_ref.open(file_info) as file:
-                       s3_key = f"{user}/{folder_name}/{file_info.filename}"
-                       s3.upload_fileobj(file, bucket_name, s3_key,ExtraArgs={'ContentType': 'application/pdf'})
+                        s3_key = f"{user_id}/{folder_name}/{file_info.filename}"
+                        
+                        s3.upload_fileobj(file, bucket_name, s3_key,ExtraArgs={'ContentType': 'application/pdf'})
 
-                       presigned_url = s3.generate_presigned_url(
+                        presigned_url = s3.generate_presigned_url(
                             'get_object',
                             Params={'Bucket': bucket_name, 'Key': s3_key},
                             ExpiresIn=3600 
                        )
-                       pdf.append({
+
+                        file_obj = UploadedFile.objects.create(
+                            user_id=request.data.get('user_id'),
+                            input_path=presigned_url,
+                            status="uploaded"
+                        )
+
+                        pdf.append({
+                            "id": file_obj.id,
                             "name": file_info.filename,
                             "url": presigned_url,
                             "status": "Uploaded"
@@ -92,4 +102,4 @@ def upload_folder(request):
         return Response({"message": "Folder uploaded successfully","success": True, "pdf": pdf}, status=201)
     
     else:
-        return Response({"message": "No file uploaded","success": False}, status=400)
+        return Response({"message": "No folder uploaded","success": False}, status=400)
