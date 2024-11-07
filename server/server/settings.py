@@ -16,6 +16,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = 'user_api.UserCredentials'
+
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -138,7 +140,7 @@ WSGI_APPLICATION = 'server.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'user_db',
+        'NAME': 'icd_db',
         'USER': 'root',
         'PASSWORD': 'alen',
         'HOST': 'localhost',  # or the hostname where your MySQL server is running

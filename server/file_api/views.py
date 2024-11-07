@@ -1,20 +1,31 @@
 import zipfile
+from datetime import datetime
 from rest_framework.decorators import api_view, permission_classes,authentication_classes 
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import UploadedFile
+from .models import UploadedFile,FileData,Clients,Projects
+from user_api.models import Users
 import boto3
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from user_api.serializer import UserSerializer
+from utils.uniqueidgen import generate_unique_id
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_files(request):
+
+    user_id=request.user.user_id
+    user_instance = Users.objects.get(user_id=user_id)
+
+    data = UserSerializer(user_instance).data
+
     data = {
         "message": "This is a test API in file_api",
+        "data" : data,
         "success": True,
         "status": status.HTTP_200_OK
     }
@@ -28,13 +39,23 @@ def upload_file(request):
         if request.FILES.get('file'):
             file = request.FILES['file']
 
+            user_id=request.user.user_id
+
+            user_instance = Users.objects.get(user_id=user_id)
+            data = UserSerializer(user_instance).data
+            client_id=data.get('client_id')
+            project_id=data.get('project_id')
+
+            client_instance = Clients.objects.get(client_id=client_id)
+            project_instance = Projects.objects.get(project_id=project_id)
+
             s3 = boto3.client('s3', 
                           aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                           aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                           region_name=settings.AWS_S3_REGION_NAME)
             
             bucket_name=settings.AWS_STORAGE_BUCKET_NAME
-            file_key=f"uploads/{file.name}"
+            file_key=f"{client_id}/{project_id}/{user_id}/{file.name}"
         
             s3.upload_fileobj(file, bucket_name, file_key,ExtraArgs={'ContentType': 'application/pdf'})
 
@@ -44,9 +65,17 @@ def upload_file(request):
                 ExpiresIn=3600 
             )
 
-            file_obj = UploadedFile.objects.create(
-                user_id=request.data.get('user_id'),
-                input_path=presigned_url
+            file_data = FileData.objects.create(
+                file_id=f"file_{generate_unique_id()}",
+                file_name=file.name,
+                input_path=presigned_url,
+                output_path=None,
+                status=None,
+                uploaded_at=datetime.now(),
+                updtated_at=None,
+                page_count=0,
+                client_id=client_instance,
+                project_id=project_instance
             )
 
             return Response({"file_url": presigned_url}, status=201)
@@ -60,7 +89,15 @@ def upload_file(request):
 def upload_folder(request):
     pdf=[]
 
-    user_id = request.data.get('user_id');
+    user_id=request.user.user_id
+
+    user_instance = Users.objects.get(user_id=user_id)
+    data = UserSerializer(user_instance).data
+    client_id=data.get('client_id')
+    project_id=data.get('project_id')
+
+    client_instance = Clients.objects.get(client_id=client_id)
+    project_instance = Projects.objects.get(project_id=project_id)
 
     if request.FILES.get('folder'):
         folder_zip = request.FILES['folder']
@@ -76,7 +113,7 @@ def upload_folder(request):
         with zipfile.ZipFile(folder_zip, 'r') as zip_ref:
             for file_info in zip_ref.infolist():
                  with zip_ref.open(file_info) as file:
-                        s3_key = f"{user_id}/{folder_name}/{file_info.filename}"
+                        s3_key = f"{client_id}/{project_id}/{user_id}/{folder_name}/{file_info.filename}"
                         
                         s3.upload_fileobj(file, bucket_name, s3_key,ExtraArgs={'ContentType': 'application/pdf'})
 
@@ -85,15 +122,24 @@ def upload_folder(request):
                             Params={'Bucket': bucket_name, 'Key': s3_key},
                             ExpiresIn=3600 
                        )
+                        
+                        file_id = f"file_{generate_unique_id()}"
 
-                        file_obj = UploadedFile.objects.create(
-                            user_id=request.data.get('user_id'),
+                        file_data = FileData.objects.create(
+                            file_id=file_id,
+                            file_name=file.name,
                             input_path=presigned_url,
-                            status="uploaded"
+                            output_path=None,
+                            status=None,
+                            uploaded_at=datetime.now(),
+                            updtated_at=None,
+                            page_count=0,
+                            client_id=client_instance,
+                            project_id=project_instance
                         )
 
                         pdf.append({
-                            "id": file_obj.id,
+                            "id": file_id,
                             "name": file_info.filename,
                             "url": presigned_url,
                             "status": "Uploaded"
