@@ -1,15 +1,17 @@
 from pathlib import Path
 from datetime import timedelta
 from django.conf import settings
+import os
+from dotenv import load_dotenv
+
+env_path = Path('.') / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-x$=q&uf6q*a=n25#*^5e@i3!gg20u248)u06qy^vdqa-rmtkij'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -28,7 +30,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-SECRET_KEY ='Io8RmnU51J-dZDDtMxUM9CCf-v2VDfWP6_-QwLoOvvyi38MgRTcrqJxKOrrhwnfnE2I'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
@@ -87,15 +89,15 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 ]
 
-AWS_ACCESS_KEY_ID = 'AKIAZGCTKU33LZJQKPNM'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'icd-temp-bucket-20241031'
-AWS_S3_SIGNATURE_NAME = 's3v4'
-AWS_S3_REGION_NAME = 'us-east-1'
-AWS_S3_FILE_OVERWRITE = False
-AWS_S3_VERITY= True
-AWS_DEFAULT_ACL = None
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_SIGNATURE_NAME = os.environ.get('AWS_S3_SIGNATURE_NAME')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME')
+AWS_S3_FILE_OVERWRITE = os.environ.get('AWS_S3_FILE_OVERWRITE')
+AWS_S3_VERITY= os.environ.get('AWS_S3_VERITY')
+AWS_DEFAULT_ACL = os.environ.get('AWS_DEFAULT_ACL')
+DEFAULT_FILE_STORAGE = os.environ.get('DEFAULT_FILE_STORAGE')
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -139,12 +141,12 @@ WSGI_APPLICATION = 'server.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'icd_db',
-        'USER': 'root',
-        'PASSWORD': 'alen',
-        'HOST': 'localhost',  # or the hostname where your MySQL server is running
-        'PORT': '3306',      # or the port on which your MySQL server is listening
+        'ENGINE': os.environ.get('DB_ENGINE'),
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),  
+        'PORT': os.environ.get('DB_PORT'),      
     }
 }
 
@@ -190,8 +192,6 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-import os
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
