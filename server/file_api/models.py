@@ -12,7 +12,7 @@ class FileData(models.Model):
     page_count = models.IntegerField(default=0)
 
     client_id = models.ForeignKey(Clients, on_delete=models.CASCADE)
-    project_id = models.ForeignKey(Projects, on_delete=models.CASCADE)
+    project_id = models.ForeignKey(Projects, on_delete=models.CASCADE,null=True)
 
     class Meta:
         db_table = 'file_data'
